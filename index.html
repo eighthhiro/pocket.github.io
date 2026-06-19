@@ -67,6 +67,7 @@ main{flex:1;padding:4px 20px 110px;}
 .pm-amount{font-size:1.1rem;font-weight:800;}
 
 /* Pockets carousel */
+.pockets-label{font-size:0.78rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);font-weight:600;margin:6px 2px 0;}
 .pockets-wrap{overflow:hidden;position:relative;}
 .pockets-wrap::after{content:'';position:absolute;top:0;right:0;bottom:3px;width:34px;background:linear-gradient(to right, transparent, var(--bg) 75%);opacity:0;pointer-events:none;transition:opacity .2s ease;}
 .pockets-wrap.scrollable::after{opacity:1;}
@@ -269,6 +270,7 @@ main{flex:1;padding:4px 20px 110px;}
         </div>
 
         <!-- Pockets carousel -->
+        <div class="pockets-label">Pockets</div>
         <div class="pockets-wrap">
           <div class="pockets-carousel" id="pocketsCarousel"></div>
         </div>

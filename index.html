@@ -67,16 +67,17 @@ main{flex:1;padding:4px 20px 110px;}
 .pm-amount{font-size:1.1rem;font-weight:800;}
 
 /* Pockets carousel */
-.pockets-wrap{overflow:hidden;}
+.pockets-wrap{overflow:hidden;position:relative;}
+.pockets-wrap::after{content:'';position:absolute;top:0;right:0;bottom:3px;width:34px;background:linear-gradient(to right, transparent, var(--bg) 75%);opacity:0;pointer-events:none;transition:opacity .2s ease;}
+.pockets-wrap.scrollable::after{opacity:1;}
+.pockets-wrap.scrollable.at-end::after{opacity:0;}
 .pockets-carousel{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:3px;margin-bottom:-3px;}
 .pockets-carousel::-webkit-scrollbar{display:none;}
-.card-pocket{flex:0 0 calc((100% - 20px) / 3);scroll-snap-align:start;padding:12px 10px 13px;display:flex;flex-direction:column;gap:7px;position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);}
+.card-pocket{flex:0 0 calc((100% - 20px) / 3.3);scroll-snap-align:start;padding:12px 10px 13px;display:flex;flex-direction:column;gap:7px;position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);}
 .pocket-icon{width:32px;height:32px;border-radius:9px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;color:var(--text-muted);flex-shrink:0;}
 .pocket-label{font-size:0.74rem;color:var(--text-muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .pocket-amount{font-size:0.95rem;font-weight:700;}
 .pocket-amount.negative{color:var(--rose);}
-.pocket-edit-btn{position:absolute;top:7px;right:7px;background:none;border:none;color:var(--text-faint);width:20px;height:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:5px;padding:0;}
-.pocket-edit-btn:hover{color:var(--text-muted);background:var(--surface-2);}
 .card-add-pocket{align-items:center;justify-content:center;border-style:dashed !important;cursor:pointer;}
 .card-add-pocket .pocket-icon{background:var(--gold-soft);color:var(--gold);}
 .card-add-pocket .pocket-label{color:var(--gold);text-align:center;}
@@ -324,19 +325,23 @@ main{flex:1;padding:4px 20px 110px;}
     </form>
   </div>
 
-  <!-- SHEET: Pocket allocation -->
-  <div class="sheet" id="sheet-pocket-alloc" role="dialog" aria-label="Set pocket allocation">
+  <!-- SHEET: Pocket (rename, change icon, set amount, delete — all in one place) -->
+  <div class="sheet" id="sheet-pocket" role="dialog" aria-label="Pocket settings">
     <div class="sheet-handle"></div>
-    <div class="sheet-head"><h3 id="allocTitle">Pocket</h3><button type="button" class="btn-icon-ghost" data-action="close-sheet" aria-label="Close"><svg class="icon"><use href="#icon-close"/></svg></button></div>
-    <div class="info-row" id="allocInfoRow">
-      <span>Excess available</span><strong id="allocExcess">₱0.00</strong>
-    </div>
-    <form id="allocForm">
-      <label class="field"><span>Set amount</span><input type="number" id="allocAmount" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></label>
-      <p class="field-error" id="allocError"></p>
-      <button type="submit" class="btn-primary btn-block">Set amount</button>
+    <div class="sheet-head"><h3 id="pocketSheetTitle">Pocket</h3><button type="button" class="btn-icon-ghost" data-action="close-sheet" aria-label="Close"><svg class="icon"><use href="#icon-close"/></svg></button></div>
+    <div class="info-row"><span>Excess available</span><strong id="pocketExcessAvail">₱0.00</strong></div>
+    <form id="pocketForm">
+      <label class="field"><span>Name</span><input type="text" id="pocketName" maxlength="20" required></label>
+      <div class="field">
+        <span>Icon</span>
+        <div class="icon-picker" id="pocketIconPicker"></div>
+      </div>
+      <label class="field"><span>Set amount</span><input type="number" id="pocketAmount" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></label>
+      <p class="field-error" id="pocketError"></p>
+      <button type="submit" class="btn-primary btn-block">Save changes</button>
     </form>
-    <button type="button" class="btn-ghost" id="allocReturnBtn"><svg class="icon icon-sm"><use href="#icon-swap"/></svg>Return all to Excess</button>
+    <button type="button" class="btn-ghost" id="pocketReturnBtn"><svg class="icon icon-sm"><use href="#icon-swap"/></svg>Return all to Excess</button>
+    <button type="button" class="btn-danger" id="pocketDeleteBtn">Delete pocket</button>
   </div>
 
   <!-- SHEET: Add pocket -->
@@ -352,22 +357,6 @@ main{flex:1;padding:4px 20px 110px;}
       <p class="field-error" id="addPocketError"></p>
       <button type="submit" class="btn-primary btn-block">Create pocket</button>
     </form>
-  </div>
-
-  <!-- SHEET: Edit pocket -->
-  <div class="sheet" id="sheet-edit-pocket" role="dialog" aria-label="Edit pocket">
-    <div class="sheet-handle"></div>
-    <div class="sheet-head"><h3>Edit pocket</h3><button type="button" class="btn-icon-ghost" data-action="close-sheet" aria-label="Close"><svg class="icon"><use href="#icon-close"/></svg></button></div>
-    <form id="editPocketForm">
-      <label class="field"><span>Name</span><input type="text" id="editPocketName" maxlength="20" required></label>
-      <div class="field">
-        <span>Choose an icon</span>
-        <div class="icon-picker" id="editIconPicker"></div>
-      </div>
-      <p class="field-error" id="editPocketError"></p>
-      <button type="submit" class="btn-primary btn-block">Save changes</button>
-    </form>
-    <button type="button" class="btn-danger" id="deletePocketBtn">Delete pocket</button>
   </div>
 
   <!-- SHEET: Expense -->
@@ -498,10 +487,9 @@ let state = loadState();
 let currentPeriod = 'today';
 let currentFundGoalId = null;
 let currentPocketKey = null;
-let currentEditPocketKey = null;
 let currentPmFrom = 'cash';
 let addPocketSelectedIcon = 'receipt';
-let editPocketSelectedIcon = 'receipt';
+let pocketSelectedIcon = 'receipt';
 
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
@@ -571,14 +559,9 @@ function renderCarousel(){
   const pocketCards = state.catOrder.map(key => {
     const cat = state.categories[key];
     const bal = cat.balance;
-    const editBtn = cat.locked ? '' :
-      `<button type="button" class="pocket-edit-btn" data-action="open-edit-pocket" data-cat-id="${key}" aria-label="Edit ${escHtml(cat.name)}">
-        <svg class="icon icon-xs"><use href="#icon-edit"/></svg>
-      </button>`;
-    const action = cat.locked ? 'open-add-money' : 'open-pocket-alloc';
+    const action = cat.locked ? 'open-add-money' : 'open-pocket';
     const excessHint = cat.locked ? `<span class="excess-hint">source</span>` : '';
     return `<div class="card-pocket" data-action="${action}" data-cat-id="${key}" role="button" tabindex="0">
-      ${editBtn}
       <span class="pocket-icon"><svg class="icon"><use href="#icon-${escHtml(cat.icon)}"/></svg></span>
       <span class="pocket-label">${escHtml(cat.name)}</span>
       <span class="pocket-amount${bal < 0 ? ' negative' : ''}">${fmt(bal)}</span>
@@ -592,6 +575,17 @@ function renderCarousel(){
   </div>`;
 
   carousel.innerHTML = pocketCards + addCard;
+  updateCarouselScrollHint();
+}
+
+function updateCarouselScrollHint(){
+  const wrap = document.querySelector('.pockets-wrap');
+  const carousel = document.getElementById('pocketsCarousel');
+  if(!wrap || !carousel) return;
+  const scrollable = carousel.scrollWidth > carousel.clientWidth + 2;
+  wrap.classList.toggle('scrollable', scrollable);
+  const atEnd = carousel.scrollLeft + carousel.clientWidth >= carousel.scrollWidth - 2;
+  wrap.classList.toggle('at-end', atEnd);
 }
 
 function renderTxnRow(t){
@@ -727,15 +721,18 @@ function openPmTransferSheet(from){
   openSheet('sheet-pm-transfer');
 }
 
-function openPocketAllocSheet(catKey){
+function openPocketSheet(catKey){
   currentPocketKey = catKey;
   const cat = state.categories[catKey];
-  clearErr('allocError');
-  document.getElementById('allocTitle').textContent = cat.name;
-  document.getElementById('allocAmount').value = cat.balance > 0 ? cat.balance : '';
-  document.getElementById('allocExcess').textContent = fmt(state.categories.excess.balance);
+  document.getElementById('pocketSheetTitle').textContent = cat.name;
+  document.getElementById('pocketName').value = cat.name;
+  pocketSelectedIcon = cat.icon || 'receipt';
+  renderIconPicker('pocketIconPicker', pocketSelectedIcon);
+  document.getElementById('pocketAmount').value = cat.balance > 0 ? cat.balance : '';
+  document.getElementById('pocketExcessAvail').textContent = fmt(state.categories.excess.balance);
+  clearErr('pocketError');
   closeAllSheets();
-  openSheet('sheet-pocket-alloc');
+  openSheet('sheet-pocket');
 }
 
 function openAddPocketSheet(){
@@ -745,17 +742,6 @@ function openAddPocketSheet(){
   renderIconPicker('addIconPicker', addPocketSelectedIcon);
   closeAllSheets();
   openSheet('sheet-add-pocket');
-}
-
-function openEditPocketSheet(catKey){
-  currentEditPocketKey = catKey;
-  const cat = state.categories[catKey];
-  document.getElementById('editPocketName').value = cat.name;
-  clearErr('editPocketError');
-  editPocketSelectedIcon = cat.icon || 'receipt';
-  renderIconPicker('editIconPicker', editPocketSelectedIcon);
-  closeAllSheets();
-  openSheet('sheet-edit-pocket');
 }
 
 function openExpenseSheet(){
@@ -839,30 +825,29 @@ function downloadBackup(){
 document.addEventListener('DOMContentLoaded', () => {
   renderAll();
 
+  document.getElementById('pocketsCarousel').addEventListener('scroll', updateCarouselScrollHint);
+
   /* Global click delegation */
   document.addEventListener('click', e => {
+    // Icon picker selection — checked first since these buttons have no data-action
+    const iconOpt = e.target.closest('.icon-opt');
+    if(iconOpt){
+      const pickerId = iconOpt.dataset.picker;
+      document.querySelectorAll(`#${pickerId} .icon-opt`).forEach(o => o.classList.remove('selected'));
+      iconOpt.classList.add('selected');
+      if(pickerId === 'addIconPicker') addPocketSelectedIcon = iconOpt.dataset.icon;
+      else pocketSelectedIcon = iconOpt.dataset.icon;
+      return;
+    }
+
     const el = e.target.closest('[data-action]');
     if(!el) return;
     const action = el.dataset.action;
 
-    // Icon picker selection (stop propagation so it doesn't trigger parent card)
-    if(el.classList.contains('icon-opt')){
-      e.stopPropagation();
-      const pickerId = el.dataset.picker;
-      document.querySelectorAll(`#${pickerId} .icon-opt`).forEach(o => o.classList.remove('selected'));
-      el.classList.add('selected');
-      if(pickerId === 'addIconPicker') addPocketSelectedIcon = el.dataset.icon;
-      else editPocketSelectedIcon = el.dataset.icon;
-      return;
-    }
-
-    // Pocket edit button: stop propagation so card click doesn't fire
-    if(action === 'open-edit-pocket'){ e.stopPropagation(); openEditPocketSheet(el.dataset.catId); return; }
-
     switch(action){
       case 'open-add-money':    e.stopPropagation(); openAddMoneySheet(); break;
       case 'open-pm-transfer':  openPmTransferSheet(el.dataset.pm); break;
-      case 'open-pocket-alloc': openPocketAllocSheet(el.dataset.catId); break;
+      case 'open-pocket':       openPocketSheet(el.dataset.catId); break;
       case 'open-add-pocket':   openAddPocketSheet(); break;
       case 'open-expense':      openExpenseSheet(); break;
       case 'open-goal':         openGoalSheet(); break;
@@ -940,29 +925,35 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast('Moved ' + fmt(amount) + ' to ' + (to === 'cash' ? 'Cash' : 'Card'));
   });
 
-  // Pocket allocation
-  document.getElementById('allocForm').addEventListener('submit', e => {
+  // Pocket sheet: name, icon, and amount saved together
+  document.getElementById('pocketForm').addEventListener('submit', e => {
     e.preventDefault();
     const cat = state.categories[currentPocketKey];
-    const newAmount = parseFloat(document.getElementById('allocAmount').value) || 0;
-    const err = document.getElementById('allocError');
+    const name = document.getElementById('pocketName').value.trim();
+    const err = document.getElementById('pocketError');
+    if(!name){ err.textContent = 'Name cannot be empty.'; return; }
+    const amountRaw = document.getElementById('pocketAmount').value;
+    const newAmount = amountRaw === '' ? cat.balance : (parseFloat(amountRaw) || 0);
     if(newAmount < 0){ err.textContent = 'Amount cannot be negative.'; return; }
     const diff = newAmount - cat.balance;
     if(diff > 0 && state.categories.excess.balance < diff){
       err.textContent = 'Not enough in Excess (have ' + fmt(state.categories.excess.balance) + ').'; return;
     }
-    const old = cat.balance;
-    cat.balance = newAmount;
-    state.categories.excess.balance -= diff;
-    state.transactions.push({ id:uid(), type:'transfer',
-      from: diff > 0 ? 'excess' : currentPocketKey,
-      to:   diff > 0 ? currentPocketKey : 'excess',
-      amount: Math.abs(diff), date:new Date().toISOString() });
+    cat.name = name;
+    cat.icon = pocketSelectedIcon;
+    if(diff !== 0){
+      cat.balance = newAmount;
+      state.categories.excess.balance -= diff;
+      state.transactions.push({ id:uid(), type:'transfer',
+        from: diff > 0 ? 'excess' : currentPocketKey,
+        to:   diff > 0 ? currentPocketKey : 'excess',
+        amount: Math.abs(diff), date:new Date().toISOString() });
+    }
     saveState(); closeAllSheets(); renderAll();
-    showToast(cat.name + ' set to ' + fmt(newAmount));
+    showToast('Saved "' + name + '"');
   });
 
-  document.getElementById('allocReturnBtn').addEventListener('click', () => {
+  document.getElementById('pocketReturnBtn').addEventListener('click', () => {
     const cat = state.categories[currentPocketKey];
     if(!cat || cat.balance === 0){ closeAllSheets(); return; }
     const amount = cat.balance;
@@ -971,6 +962,10 @@ document.addEventListener('DOMContentLoaded', () => {
     state.transactions.push({ id:uid(), type:'transfer', from:currentPocketKey, to:'excess', amount, date:new Date().toISOString() });
     saveState(); closeAllSheets(); renderAll();
     showToast('Returned ' + fmt(amount) + ' to Excess');
+  });
+
+  document.getElementById('pocketDeleteBtn').addEventListener('click', () => {
+    deletePocket(currentPocketKey);
   });
 
   // Add pocket
@@ -984,23 +979,6 @@ document.addEventListener('DOMContentLoaded', () => {
     state.catOrder.push(key);
     saveState(); closeAllSheets(); renderAll();
     showToast('"' + name + '" pocket created');
-  });
-
-  // Edit pocket
-  document.getElementById('editPocketForm').addEventListener('submit', e => {
-    e.preventDefault();
-    const cat = state.categories[currentEditPocketKey];
-    const name = document.getElementById('editPocketName').value.trim();
-    const err = document.getElementById('editPocketError');
-    if(!name){ err.textContent = 'Name cannot be empty.'; return; }
-    cat.name = name;
-    cat.icon = editPocketSelectedIcon;
-    saveState(); closeAllSheets(); renderAll();
-    showToast('Pocket updated');
-  });
-
-  document.getElementById('deletePocketBtn').addEventListener('click', () => {
-    deletePocket(currentEditPocketKey);
   });
 
   // Expense

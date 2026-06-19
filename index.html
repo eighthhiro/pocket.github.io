@@ -170,8 +170,16 @@ main{flex:1;padding:4px 20px 110px;}
 .pm-opt.selected{border-color:var(--gold);color:var(--text);background:var(--gold-soft);}
 .pm-opt.selected .pm-icon{color:var(--gold);}
 
-/* Icon picker */
-.icon-picker{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:10px 0 16px;}
+/* Name + icon row (compact) */
+.name-icon-row{display:flex;gap:8px;}
+.name-icon-row input{flex:1;min-width:0;}
+.icon-preview-btn{flex-shrink:0;width:46px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);cursor:pointer;}
+.icon-preview-btn:hover{background:var(--border);color:var(--text);}
+.icon-preview-btn.active{border-color:var(--gold);color:var(--gold);background:var(--gold-soft);}
+
+/* Icon picker (collapsible — only visible while choosing) */
+.icon-picker{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;max-height:0;opacity:0;overflow:hidden;margin:0;transition:max-height .22s ease,opacity .18s ease,margin .22s ease;}
+.icon-picker.open{max-height:260px;opacity:1;margin:4px 0 16px;}
 .icon-opt{aspect-ratio:1;border-radius:10px;background:var(--surface-2);border:2px solid transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted);transition:border-color .1s,background .1s;}
 .icon-opt:hover{background:var(--border);}
 .icon-opt.selected{border-color:var(--gold);background:var(--gold-soft);color:var(--gold);}
@@ -315,10 +323,9 @@ main{flex:1;padding:4px 20px 110px;}
   <!-- SHEET: PM Transfer -->
   <div class="sheet" id="sheet-pm-transfer" role="dialog" aria-label="Transfer between Cash and Card">
     <div class="sheet-handle"></div>
-    <div class="sheet-head"><h3>Cash ↔ Card</h3><button type="button" class="btn-icon-ghost" data-action="close-sheet" aria-label="Close"><svg class="icon"><use href="#icon-close"/></svg></button></div>
-    <p class="sheet-sub" id="pmTransferSub">Move money between your wallet and your card.</p>
+    <div class="sheet-head"><h3 id="pmTransferTitle">Cash → Card</h3><button type="button" class="btn-icon-ghost" data-action="close-sheet" aria-label="Close"><svg class="icon"><use href="#icon-close"/></svg></button></div>
+    <div class="info-row"><span>Available</span><strong id="pmTransferAvail">₱0.00</strong></div>
     <form id="pmTransferForm">
-      <label class="field"><span>From</span><select id="pmTransferFrom"></select></label>
       <label class="field"><span>Amount</span><input type="number" id="pmTransferAmount" inputmode="decimal" min="0" step="0.01" placeholder="0.00" required></label>
       <p class="field-error" id="pmTransferError"></p>
       <button type="submit" class="btn-primary btn-block">Transfer</button>
@@ -331,11 +338,16 @@ main{flex:1;padding:4px 20px 110px;}
     <div class="sheet-head"><h3 id="pocketSheetTitle">Pocket</h3><button type="button" class="btn-icon-ghost" data-action="close-sheet" aria-label="Close"><svg class="icon"><use href="#icon-close"/></svg></button></div>
     <div class="info-row"><span>Excess available</span><strong id="pocketExcessAvail">₱0.00</strong></div>
     <form id="pocketForm">
-      <label class="field"><span>Name</span><input type="text" id="pocketName" maxlength="20" required></label>
       <div class="field">
-        <span>Icon</span>
-        <div class="icon-picker" id="pocketIconPicker"></div>
+        <span>Name &amp; icon</span>
+        <div class="name-icon-row">
+          <input type="text" id="pocketName" maxlength="20" required>
+          <button type="button" class="icon-preview-btn" id="pocketIconToggle" aria-label="Change icon" aria-expanded="false">
+            <svg class="icon"><use id="pocketIconPreviewUse" href="#icon-receipt"/></svg>
+          </button>
+        </div>
       </div>
+      <div class="icon-picker" id="pocketIconPicker"></div>
       <label class="field"><span>Set amount</span><input type="number" id="pocketAmount" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></label>
       <p class="field-error" id="pocketError"></p>
       <button type="submit" class="btn-primary btn-block">Save changes</button>
@@ -349,11 +361,16 @@ main{flex:1;padding:4px 20px 110px;}
     <div class="sheet-handle"></div>
     <div class="sheet-head"><h3>New pocket</h3><button type="button" class="btn-icon-ghost" data-action="close-sheet" aria-label="Close"><svg class="icon"><use href="#icon-close"/></svg></button></div>
     <form id="addPocketForm">
-      <label class="field"><span>Name</span><input type="text" id="addPocketName" maxlength="20" placeholder="e.g. Transport" required></label>
       <div class="field">
-        <span>Choose an icon</span>
-        <div class="icon-picker" id="addIconPicker"></div>
+        <span>Name &amp; icon</span>
+        <div class="name-icon-row">
+          <input type="text" id="addPocketName" maxlength="20" placeholder="e.g. Transport" required>
+          <button type="button" class="icon-preview-btn" id="addPocketIconToggle" aria-label="Change icon" aria-expanded="false">
+            <svg class="icon"><use id="addPocketIconPreviewUse" href="#icon-receipt"/></svg>
+          </button>
+        </div>
       </div>
+      <div class="icon-picker" id="addIconPicker"></div>
       <p class="field-error" id="addPocketError"></p>
       <button type="submit" class="btn-primary btn-block">Create pocket</button>
     </form>
@@ -404,8 +421,8 @@ main{flex:1;padding:4px 20px 110px;}
   <div class="sheet" id="sheet-fund-goal" role="dialog" aria-label="Fund goal">
     <div class="sheet-handle"></div>
     <div class="sheet-head"><h3 id="fundGoalTitle">Fund goal</h3><button type="button" class="btn-icon-ghost" data-action="close-sheet" aria-label="Close"><svg class="icon"><use href="#icon-close"/></svg></button></div>
+    <div class="info-row"><span>Excess available</span><strong id="fundGoalExcessAvail">₱0.00</strong></div>
     <form id="fundGoalForm">
-      <label class="field"><span>From pocket</span><select id="fundGoalSource"></select></label>
       <label class="field"><span>Amount</span><input type="number" id="fundGoalAmount" inputmode="decimal" min="0" step="0.01" placeholder="0.00" required></label>
       <p class="field-error" id="fundGoalError"></p>
       <button type="submit" class="btn-primary btn-block">Add to goal</button>
@@ -540,11 +557,27 @@ function catName(k){ return state.categories[k]?.name || k; }
 /* ---- Icon picker ---- */
 function renderIconPicker(pickerId, selectedIcon){
   const picker = document.getElementById(pickerId);
+  picker.classList.remove('open');
   picker.innerHTML = POCKET_ICONS.map(icon =>
     `<button type="button" class="icon-opt${icon === selectedIcon ? ' selected' : ''}" data-icon="${icon}" aria-label="${icon}" data-picker="${pickerId}">
       <svg class="icon"><use href="#icon-${icon}"/></svg>
     </button>`
   ).join('');
+}
+
+function toggleIconPicker(toggleBtnId, pickerId){
+  const picker = document.getElementById(pickerId);
+  const btn = document.getElementById(toggleBtnId);
+  const isOpen = picker.classList.toggle('open');
+  btn.classList.toggle('active', isOpen);
+  btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+}
+
+function collapseIconPicker(toggleBtnId, pickerId){
+  document.getElementById(pickerId).classList.remove('open');
+  const btn = document.getElementById(toggleBtnId);
+  btn.classList.remove('active');
+  btn.setAttribute('aria-expanded', 'false');
 }
 
 /* ---- Render ---- */
@@ -710,13 +743,10 @@ function openPmTransferSheet(from){
   currentPmFrom = from;
   clearErr('pmTransferError');
   document.getElementById('pmTransferAmount').value = '';
-  const fromSel = document.getElementById('pmTransferFrom');
   const fromLabel = from === 'cash' ? 'Cash' : 'Card';
-  const fromBal = fmt(state.paymentMethods[from]);
   const toLabel = from === 'cash' ? 'Card' : 'Cash';
-  fromSel.innerHTML = `<option value="${from}">${fromLabel} — ${fromBal}</option>`;
-  document.getElementById('pmTransferSub').textContent =
-    `Move money from ${fromLabel} to ${toLabel}.`;
+  document.getElementById('pmTransferTitle').textContent = fromLabel + ' → ' + toLabel;
+  document.getElementById('pmTransferAvail').textContent = fmt(state.paymentMethods[from]);
   closeAllSheets();
   openSheet('sheet-pm-transfer');
 }
@@ -728,6 +758,9 @@ function openPocketSheet(catKey){
   document.getElementById('pocketName').value = cat.name;
   pocketSelectedIcon = cat.icon || 'receipt';
   renderIconPicker('pocketIconPicker', pocketSelectedIcon);
+  document.getElementById('pocketIconPreviewUse').setAttribute('href', '#icon-' + pocketSelectedIcon);
+  document.getElementById('pocketIconToggle').classList.remove('active');
+  document.getElementById('pocketIconToggle').setAttribute('aria-expanded', 'false');
   document.getElementById('pocketAmount').value = cat.balance > 0 ? cat.balance : '';
   document.getElementById('pocketExcessAvail').textContent = fmt(state.categories.excess.balance);
   clearErr('pocketError');
@@ -740,6 +773,9 @@ function openAddPocketSheet(){
   clearErr('addPocketError');
   addPocketSelectedIcon = 'receipt';
   renderIconPicker('addIconPicker', addPocketSelectedIcon);
+  document.getElementById('addPocketIconPreviewUse').setAttribute('href', '#icon-receipt');
+  document.getElementById('addPocketIconToggle').classList.remove('active');
+  document.getElementById('addPocketIconToggle').setAttribute('aria-expanded', 'false');
   closeAllSheets();
   openSheet('sheet-add-pocket');
 }
@@ -771,7 +807,7 @@ function openFundGoalSheet(goalId){
   document.getElementById('fundGoalTitle').textContent = 'Fund "' + goal.title + '"';
   clearErr('fundGoalError');
   document.getElementById('fundGoalAmount').value = '';
-  fillPocketSelect(document.getElementById('fundGoalSource'), null);
+  document.getElementById('fundGoalExcessAvail').textContent = fmt(state.categories.excess.balance);
   closeAllSheets();
   openSheet('sheet-fund-goal');
 }
@@ -827,16 +863,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('pocketsCarousel').addEventListener('scroll', updateCarouselScrollHint);
 
+  document.getElementById('pocketIconToggle').addEventListener('click', () => toggleIconPicker('pocketIconToggle', 'pocketIconPicker'));
+  document.getElementById('addPocketIconToggle').addEventListener('click', () => toggleIconPicker('addPocketIconToggle', 'addIconPicker'));
+
   /* Global click delegation */
   document.addEventListener('click', e => {
     // Icon picker selection — checked first since these buttons have no data-action
     const iconOpt = e.target.closest('.icon-opt');
     if(iconOpt){
       const pickerId = iconOpt.dataset.picker;
+      const icon = iconOpt.dataset.icon;
       document.querySelectorAll(`#${pickerId} .icon-opt`).forEach(o => o.classList.remove('selected'));
       iconOpt.classList.add('selected');
-      if(pickerId === 'addIconPicker') addPocketSelectedIcon = iconOpt.dataset.icon;
-      else pocketSelectedIcon = iconOpt.dataset.icon;
+      if(pickerId === 'addIconPicker'){
+        addPocketSelectedIcon = icon;
+        document.getElementById('addPocketIconPreviewUse').setAttribute('href', '#icon-' + icon);
+        collapseIconPicker('addPocketIconToggle', 'addIconPicker');
+      }else{
+        pocketSelectedIcon = icon;
+        document.getElementById('pocketIconPreviewUse').setAttribute('href', '#icon-' + icon);
+        collapseIconPicker('pocketIconToggle', 'pocketIconPicker');
+      }
       return;
     }
 
@@ -1014,14 +1061,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // Fund goal
   document.getElementById('fundGoalForm').addEventListener('submit', e => {
     e.preventDefault();
-    const source = document.getElementById('fundGoalSource').value;
+    const source = 'excess';
     const amount = parseFloat(document.getElementById('fundGoalAmount').value);
     const err = document.getElementById('fundGoalError');
     const goal = state.goals.find(g => g.id === currentFundGoalId);
     if(!goal) return;
     if(!amount || amount <= 0){ err.textContent = 'Enter an amount greater than 0.'; return; }
-    if(state.categories[source].balance < amount){ err.textContent = 'Not enough in ' + catName(source) + '.'; return; }
-    state.categories[source].balance -= amount;
+    if(state.categories.excess.balance < amount){ err.textContent = 'Not enough in Excess.'; return; }
+    state.categories.excess.balance -= amount;
     goal.saved += amount;
     state.transactions.push({ id:uid(), type:'goal_fund', category:source, amount, goalId:goal.id, date:new Date().toISOString() });
     saveState(); closeAllSheets(); renderAll();
